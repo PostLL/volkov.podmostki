@@ -1,0 +1,20 @@
+{
+    "G11111": {
+        "show": "volkov-golos",
+        "device_id": "ea6aa445-4dd4-496f-b6d8-6eddedd4adcb",
+        "activated_at": 1771355105,
+        "created_at": 1771343920
+    },
+    "G11112": {
+        "show": "volkov-golos",
+        "device_id": "ce966d08-09b9-4ab7-9eef-56c221d7895f",
+        "activated_at": 1771355202,
+        "created_at": 1771355202
+    },
+    "G11113": {
+        "show": "volkov-golos",
+        "device_id": "50e3eaa0-7e6b-4762-b221-4a3b7954141e",
+        "activated_at": 1771355315,
+        "created_at": 1771355315
+    }
+}

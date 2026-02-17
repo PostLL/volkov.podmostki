@@ -1,31 +1,229 @@
 body {
     background: #000;
     color: #ff7f00;
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
 }
 
 .player {
     width: 100%;
-    padding: 0 20px;          /* одинаковые отступы */
-    box-sizing: border-box;   /* чтобы padding не ломал ширину */
+    min-height: 100vh;
+    padding: 24px 20px 40px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.app-header {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #111;
+}
+
+.brand-name {
+    margin: 0;
+    font-size: 12px;
+    color: #ffc788;
+}
+
+h1,
+#showTitle {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.entry-card {
+    border: 1px solid #1f1f1f;
+    border-radius: 12px;
+    background: #090909;
+    padding: 14px;
+}
+
+.entry-help {
+    margin: 0 0 10px;
+    color: #ffc788;
+    font-size: 14px;
+}
+
+.code-row {
+    display: flex;
+    gap: 8px;
+}
+
+.code-row input {
+    flex: 1;
+    background: #101010;
+    border: 1px solid #2c2c2c;
+    color: #ff7f00;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.code-row button {
+    border: 1px solid #ff7f00;
+    border-radius: 8px;
+    background: transparent;
+    color: #ff7f00;
+    padding: 10px 12px;
+    cursor: pointer;
+}
+
+.code-row button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.cover-wrap {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+#showCover {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #111;
+}
+
+#trackTitle {
+    margin: 0;
     text-align: center;
+    font-weight: 600;
 }
 
 #progress {
+    --progress-percent: 0%;
     width: 100%;
-    margin: 15px 0;
+    margin: 4px 0;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(to right, #ff7f00 var(--progress-percent), #2f2f2f var(--progress-percent));
+    outline: none;
+}
+
+#progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ff7f00;
+    border: none;
+    cursor: pointer;
+}
+
+#progress::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ff7f00;
+    border: none;
+    cursor: pointer;
 }
 
 .time {
     font-size: 14px;
     display: flex;
     justify-content: space-between;
+    color: #ffa64d;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
 }
 
 .controls button {
-    font-size: 24px;
+    width: 52px;
+    height: 52px;
+    border: 1px solid #2e2e2e;
+    border-radius: 50%;
+    background: #111;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.controls button img {
+    width: 22px;
+    height: 22px;
+    filter: invert(57%) sepia(88%) saturate(1253%) hue-rotate(2deg) brightness(101%) contrast(106%);
+}
+
+.controls button:active {
+    transform: scale(0.97);
+}
+
+.controls button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.playlist-wrap h4 {
+    margin: 4px 0;
+    font-size: 15px;
+}
+
+.playlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.playlist-item {
+    padding: 10px 12px;
+    border: 1px solid #2d2d2d;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #ffb570;
+}
+
+.playlist-item.is-active {
+    border-color: #ff7f00;
     color: #ff7f00;
-    background: #222;
-    margin: 10px;
+    background: #1a1004;
+}
+
+.show-meta {
+    margin-top: 8px;
+    border-top: 1px solid #1f1f1f;
+    padding-top: 12px;
+}
+
+.show-meta p {
+    margin: 0 0 8px;
+    color: #ffc788;
+    line-height: 1.4;
+}
+
+.message {
+    margin: 4px 0 0;
+    min-height: 20px;
+    text-align: left;
+    font-size: 13px;
+    color: #ffc788;
 }

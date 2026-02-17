@@ -1,9 +1,17 @@
 {
-  "name": "Аудиоспектакль",
-  "short_name": "Спектакль",
-  "start_url": "/player.php?show=volkov-golos",
+  "name": "Аудиоспектакли Подмостки",
+  "short_name": "Подмостки",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#111",
-  "theme_color": "#111",
-  "icons": []
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "PWA-плеер аудиоспектаклей с сохранением позиции.",
+  "icons": [
+    {
+      "src": "/assets/icons/play.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
 }

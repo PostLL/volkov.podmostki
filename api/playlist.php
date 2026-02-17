@@ -1,37 +1,58 @@
 <?php
 
+header('Content-Type: application/json; charset=utf-8');
+
+$shows = require __DIR__ . '/shows.php';
+
 $show = $_GET['show'] ?? 'volkov-golos';
 
-$basePath = $_SERVER['DOCUMENT_ROOT'] . "/storage/audio/$show";
-$baseUrl  = "/storage/audio/$show";
-
-if (!is_dir($basePath)) {
+if (!isset($shows[$show])) {
     http_response_code(404);
-    echo json_encode(["error" => "Show not found"]);
+    echo json_encode(['error' => 'Show not found']);
     exit;
 }
 
-$files = scandir($basePath);
+$showMeta = $shows[$show];
+$basePath = $_SERVER['DOCUMENT_ROOT'] . "/storage/audio/$show";
+$baseUrl = "/storage/audio/$show";
+
+if (!is_dir($basePath)) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Audio folder not found']);
+    exit;
+}
+
+$files = scandir($basePath) ?: [];
+$audioFiles = [];
+
+foreach ($files as $file) {
+    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) !== 'mp3') {
+        continue;
+    }
+    $audioFiles[] = $file;
+}
+
+natcasesort($audioFiles);
+$audioFiles = array_values($audioFiles);
 
 $tracks = [];
 $id = 1;
 
-foreach ($files as $file) {
-    if (pathinfo($file, PATHINFO_EXTENSION) === 'mp3') {
-        $tracks[] = [
-            "id" => $id++,
-            "title" => pathinfo($file, PATHINFO_FILENAME),
-            "file" => "$baseUrl/$file"
-        ];
-    }
+foreach ($audioFiles as $file) {
+    $title = pathinfo($file, PATHINFO_FILENAME);
+
+    $tracks[] = [
+        'id' => $id++,
+        'title' => $title,
+        'file' => "$baseUrl/$file"
+    ];
 }
 
-usort($tracks, function($a, $b) {
-    return strcmp($a['file'], $b['file']);
-});
-
 echo json_encode([
-    "title" => "Голос Волкова",
-    "cover" => "/storage/covers/volkov-golos.jpg",
-    "tracks" => $tracks
+    'show' => $show,
+    'title' => $showMeta['title'],
+    'cover' => $showMeta['cover'],
+    'description' => $showMeta['description'],
+    'authors' => $showMeta['authors'],
+    'tracks' => $tracks
 ]);
