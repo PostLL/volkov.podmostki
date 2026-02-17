@@ -1,0 +1,9 @@
+{
+  "name": "Аудиоспектакль",
+  "short_name": "Спектакль",
+  "start_url": "/player.php?show=volkov-golos",
+  "display": "standalone",
+  "background_color": "#111",
+  "theme_color": "#111",
+  "icons": []
+}
