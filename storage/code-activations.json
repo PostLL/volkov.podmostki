@@ -1,0 +1,70 @@
+{
+    "G11111": {
+        "show": "volkov-golos",
+        "device_id": "ea6aa445-4dd4-496f-b6d8-6eddedd4adcb",
+        "activated_at": 1771355105,
+        "created_at": 1771343920
+    },
+    "G11112": {
+        "show": "volkov-golos",
+        "device_id": "ce966d08-09b9-4ab7-9eef-56c221d7895f",
+        "activated_at": 1771355202,
+        "created_at": 1771355202
+    },
+    "G11113": {
+        "show": "volkov-golos",
+        "device_id": "50e3eaa0-7e6b-4762-b221-4a3b7954141e",
+        "activated_at": 1771355315,
+        "created_at": 1771355315
+    },
+    "G11114": {
+        "show": "volkov-golos",
+        "device_id": "50e3eaa0-7e6b-4762-b221-4a3b7954141e",
+        "activated_at": 1771356418,
+        "created_at": 1771356418
+    },
+    "G11115": {
+        "show": "volkov-golos",
+        "device_id": "4916b8a2-d788-4ac2-8692-b07f109a4c4f",
+        "activated_at": 1771357424,
+        "created_at": 1771357424
+    },
+    "G11116": {
+        "show": "volkov-golos",
+        "device_id": "76851195-177a-41fd-94b7-08356140bd10",
+        "activated_at": 1771358785,
+        "created_at": 1771358785
+    },
+    "G11119": {
+        "show": "volkov-golos",
+        "device_id": "536ff969-b970-45d6-ad8e-cff915646478",
+        "device_fingerprint": "fp-1235927621",
+        "activated_at": 1771362558,
+        "created_at": 1771362558,
+        "updated_at": 1771362558
+    },
+    "G12345": {
+        "show": "volkov-golos",
+        "device_id": "3f0592a1-3870-49e0-8bb4-e634b1273ddf",
+        "device_fingerprint": "fp-1235927621",
+        "activated_at": 1771399120,
+        "created_at": 1771399120,
+        "updated_at": 1771399120
+    },
+    "GAB-12": {
+        "show": "volkov-golos",
+        "device_id": "61776a2d-7da2-443e-8ea7-241a15869df6",
+        "device_fingerprint": "fp-599221341",
+        "activated_at": 1771402301,
+        "created_at": 1771402301,
+        "updated_at": 1771402301
+    },
+    "GE1_7G": {
+        "show": "volkov-golos",
+        "device_id": "dbdbc39c-9a20-4f1f-93ae-4f1878e6296f",
+        "device_fingerprint": "fp-599221341",
+        "activated_at": 1771406938,
+        "created_at": 1771406926,
+        "updated_at": 1771406938
+    }
+}
