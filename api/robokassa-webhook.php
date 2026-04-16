@@ -17,11 +17,11 @@ $shows = require __DIR__ . '/shows.php';
 require __DIR__ . '/code-lib.php';
 require __DIR__ . '/robokassa-config.php';
 
-$isTest = ((string) ($_REQUEST['IsTest'] ?? $_REQUEST['is_test'] ?? '0')) === '1';
+$isTest = ((string) ($_REQUEST['IsTest'] ?? $_REQUEST['is_test'] ?? '')) === '1';
 $password2 = robokassa_get_password2($isTest);
 
 $outSum = $_REQUEST['OutSum'] ?? $_REQUEST['out_sum'] ?? '';
-$invId = $_REQUEST['InvId'] ?? $_REQUEST['inv_id'] ?? '';
+$invId = $_REQUEST['InvId'] ?? $_REQUEST['InvoiceID'] ?? $_REQUEST['inv_id'] ?? '';
 $signature = strtolower($_REQUEST['SignatureValue'] ?? $_REQUEST['signaturevalue'] ?? '');
 $show = $_REQUEST['Shp_show'] ?? $_REQUEST['shp_show'] ?? 'volkov-golos';
 $qty = (int) ($_REQUEST['Shp_qty'] ?? $_REQUEST['shp_qty'] ?? 1);
@@ -46,11 +46,49 @@ if (!isset($shows[$show])) {
 
 $qty = max(1, min($qty, 20));
 
-$myCrc = strtolower(md5($outSum . ':' . $invId . ':' . $password2 . ':Shp_show=' . $show . ':Shp_qty=' . $qty));
+$myCrc = strtolower(md5($outSum . ':' . $invId . ':' . $password2 . ':Shp_qty=' . $qty . ':Shp_show=' . $show));
+
+// Иногда IsTest в webhook отсутствует, хотя платёж тестовый.
+// В таком случае дополнительно проверяем подпись тестовым Password2.
 if ($myCrc !== $signature) {
-    http_response_code(403);
-    echo 'BAD_SIGNATURE';
-    exit;
+    $testPassword2 = robokassa_get_password2(true);
+    if (!robokassa_is_placeholder($testPassword2)) {
+        $testCrc = strtolower(md5($outSum . ':' . $invId . ':' . $testPassword2 . ':Shp_qty=' . $qty . ':Shp_show=' . $show));
+        if ($testCrc === $signature) {
+            $isTest = true;
+        } else {
+            http_response_code(403);
+            echo 'BAD_SIGNATURE';
+            exit;
+        }
+    } else {
+        http_response_code(403);
+        echo 'BAD_SIGNATURE';
+        exit;
+    }
+}
+
+// Лёгкий лог webhook-запросов для оператора (без секретов).
+$logPath = (string) (getenv('ROBOKASSA_WEBHOOK_LOG_PATH') ?: (__DIR__ . '/../storage/robokassa-webhook.log'));
+$logDir = dirname($logPath);
+if (!is_dir($logDir)) {
+    @mkdir($logDir, 0775, true);
+}
+$logLine = json_encode([
+    'ts' => time(),
+    'inv_id' => (string) $invId,
+    'out_sum' => (string) $outSum,
+    'show' => (string) $show,
+    'qty' => (int) $qty,
+    'is_test' => (bool) $isTest,
+    'remote_addr' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+if (is_string($logLine)) {
+    $written = @file_put_contents($logPath, $logLine . PHP_EOL, FILE_APPEND | LOCK_EX);
+    if ($written === false) {
+        $fallbackLog = rtrim(sys_get_temp_dir(), '/\\') . '/podmostki-robokassa-webhook.log';
+        @file_put_contents($fallbackLog, $logLine . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
 }
 
 $issued = read_issued_codes();
