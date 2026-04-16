@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Подмостки — Вход по коду</title>
+    <title>Волков.Подмостки — Вход по коду</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="/manifest.json">
@@ -11,23 +11,27 @@
 </head>
 <body>
 <div class="player">
-    <header class="app-header">
-        <div class="brand">
-            <img class="brand-logo" src="/assets/logo.png" alt="Лого компании">
-            <div>
-                <p class="brand-name">Подмостки</p>
-                <h1>Введите код билета</h1>
-            </div>
+    <header class="app-header app-header--entry">
+        <div class="brand brand--entry">
+            <img class="brand-logo brand-logo--entry" src="/assets/logo.png" alt="Лого компании">
         </div>
     </header>
 
     <section class="entry-card">
-        <p class="entry-help">Введите 6 символов кода. Статус проверяется автоматически.</p>
-        <div class="code-row">
-            <input id="ticketCode" type="text" maxlength="6" placeholder="Например, G12345" autocomplete="off">
-            <button id="entryActionBtn" type="button" disabled>Проверка...</button>
-        </div>
+        <p class="entry-help">Введите код билета (6 символов)</p>
+
+        <input id="ticketCode" class="code-input" type="text" maxlength="6" placeholder="Например, G1A-2B" autocomplete="off">
+
         <p id="entryMessage" class="message" aria-live="polite"></p>
+
+        <button id="entryActionBtn" class="entry-action" type="button" disabled>Проверка...</button>
+    </section>
+
+    <section class="notice-card">
+        <h2>Внимание!</h2>
+        <p>Введите код полностью и дождитесь проверки статуса. Если код активен — нажмите «Продолжить», если не активирован — «Активировать».</p>
+        <p>Доступ к спектаклю ограничен по времени. Не передавайте код третьим лицам.</p>
+        <p><strong>Техподдержка:</strong> support@podmostki.ru · +7 (900) 000-00-00</p>
     </section>
 </div>
 

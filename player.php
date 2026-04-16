@@ -11,13 +11,9 @@
 </head>
 <body>
 <div class="player" id="playerRoot">
-    <header class="app-header">
-        <div class="brand">
-            <img class="brand-logo" src="/assets/logo.png" alt="Лого компании">
-            <div>
-                <p class="brand-name">Подмостки</p>
-                <h1 id="showTitle">Загрузка спектакля...</h1>
-            </div>
+    <header class="app-header app-header--player">
+        <div class="brand brand--player">
+            <img class="brand-logo brand-logo--entry" src="/assets/logo.png" alt="Лого компании">
         </div>
     </header>
 
@@ -48,12 +44,17 @@
         </button>
     </div>
 
+    <div class="playlist-divider" aria-hidden="true"></div>
+
     <section class="playlist-wrap">
         <h4>Плейлист</h4>
         <ul id="playlist" class="playlist"></ul>
     </section>
 
+    <div class="playlist-divider" aria-hidden="true"></div>
+
     <footer class="show-meta">
+        <h1 id="showTitle" class="show-title">Загрузка спектакля...</h1>
         <p id="showDescription"></p>
         <p id="showAuthors"></p>
     </footer>
