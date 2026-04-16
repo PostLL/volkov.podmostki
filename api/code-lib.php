@@ -1,5 +1,13 @@
 <?php
 
+require_once __DIR__ . '/db.php';
+
+
+function db_fallback_to_file_enabled(): bool
+{
+    return ((string) (getenv('DB_FALLBACK_TO_FILE') ?: '0')) === '1';
+}
+
 /**
  * Настройки бизнес-логики кодов.
  */
@@ -12,7 +20,56 @@ function get_access_seconds(): int
 function get_cleanup_retention_days(): int
 {
     // Через сколько дней после истечения доступа удаляем активации.
-    return 14;
+    return 0;
+}
+
+
+function prune_expired_activations_now(array $activations): array
+{
+    $now = time();
+    $keep = [];
+    foreach ($activations as $code => $entry) {
+        $activatedAt = (int) ($entry['activated_at'] ?? 0);
+        if ($activatedAt <= 0) {
+            $keep[$code] = $entry;
+            continue;
+        }
+
+        $expiresAt = $activatedAt + get_access_seconds();
+        if ($now < $expiresAt) {
+            $keep[$code] = $entry;
+        }
+    }
+
+    return $keep;
+}
+
+
+function purge_expired_codes_everywhere(array $issued, array $activations): array
+{
+    $now = time();
+    $newIssued = $issued;
+    $newActivations = $activations;
+    $deleted = 0;
+
+    foreach ($activations as $code => $entry) {
+        $activatedAt = (int) ($entry['activated_at'] ?? 0);
+        if ($activatedAt <= 0) {
+            continue;
+        }
+
+        $expiresAt = $activatedAt + get_access_seconds();
+        if ($now >= $expiresAt) {
+            unset($newActivations[$code], $newIssued[$code]);
+            $deleted += 1;
+        }
+    }
+
+    return [
+        'issued' => $newIssued,
+        'activations' => $newActivations,
+        'deleted' => $deleted,
+    ];
 }
 
 /**
@@ -231,7 +288,35 @@ function write_json_array_file(string $path, array $data): bool
  */
 function read_activation_data(): array
 {
-    return read_json_array_file(get_activation_file_path());
+    if (db_is_enabled()) {
+        try {
+            $issued = db_fetch_all_issued_codes();
+            $activations = db_fetch_all_activations();
+            $purged = purge_expired_codes_everywhere($issued, $activations);
+
+            if ($purged['deleted'] > 0) {
+                db_replace_all_issued_codes($purged['issued']);
+                db_replace_all_activations($purged['activations']);
+            }
+
+            return $purged['activations'];
+        } catch (Throwable $e) {
+            if (!db_fallback_to_file_enabled()) {
+                throw $e;
+            }
+        }
+    }
+
+    $issued = read_json_array_file(get_issued_codes_file_path());
+    $activations = read_json_array_file(get_activation_file_path());
+    $purged = purge_expired_codes_everywhere($issued, $activations);
+
+    if ($purged['deleted'] > 0) {
+        write_json_array_file(get_issued_codes_file_path(), $purged['issued']);
+        write_json_array_file(get_activation_file_path(), $purged['activations']);
+    }
+
+    return $purged['activations'];
 }
 
 /**
@@ -239,6 +324,16 @@ function read_activation_data(): array
  */
 function write_activation_data(array $data): bool
 {
+    if (db_is_enabled()) {
+        try {
+            return db_replace_all_activations($data);
+        } catch (Throwable $e) {
+            if (!db_fallback_to_file_enabled()) {
+                throw $e;
+            }
+        }
+    }
+
     return write_json_array_file(get_activation_file_path(), $data);
 }
 
@@ -247,6 +342,16 @@ function write_activation_data(array $data): bool
  */
 function read_issued_codes(): array
 {
+    if (db_is_enabled()) {
+        try {
+            return db_fetch_all_issued_codes();
+        } catch (Throwable $e) {
+            if (!db_fallback_to_file_enabled()) {
+                throw $e;
+            }
+        }
+    }
+
     return read_json_array_file(get_issued_codes_file_path());
 }
 
@@ -255,6 +360,16 @@ function read_issued_codes(): array
  */
 function write_issued_codes(array $data): bool
 {
+    if (db_is_enabled()) {
+        try {
+            return db_replace_all_issued_codes($data);
+        } catch (Throwable $e) {
+            if (!db_fallback_to_file_enabled()) {
+                throw $e;
+            }
+        }
+    }
+
     return write_json_array_file(get_issued_codes_file_path(), $data);
 }
 
@@ -295,16 +410,18 @@ function prune_old_activations(array $activations): array
  */
 function run_cleanup_activations(): array
 {
+    $issued = read_issued_codes();
     $before = read_activation_data();
-    $after = prune_old_activations($before);
+    $purged = purge_expired_codes_everywhere($issued, $before);
 
-    $saved = write_activation_data($after);
+    $ok1 = write_issued_codes($purged['issued']);
+    $ok2 = write_activation_data($purged['activations']);
 
     return [
-        'ok' => $saved,
+        'ok' => ($ok1 && $ok2),
         'before' => count($before),
-        'after' => count($after),
-        'deleted' => count($before) - count($after)
+        'after' => count($purged['activations']),
+        'deleted' => $purged['deleted']
     ];
 }
 

@@ -7,6 +7,15 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 
+set_exception_handler(function (Throwable $e): void {
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'message' => 'Внутренняя ошибка сервера',
+    ]);
+    exit;
+});
+
 require __DIR__ . '/env.php';
 $shows = require __DIR__ . '/shows.php';
 require __DIR__ . '/code-lib.php';
@@ -24,8 +33,17 @@ $action = $_GET['action'] ?? ($_POST['action'] ?? '');
 $code = normalize_code($_GET['code'] ?? ($_POST['code'] ?? ''));
 $show = $_GET['show'] ?? ($_POST['show'] ?? '');
 
-$issued = read_issued_codes();
-$activations = read_activation_data();
+try {
+    $issued = read_issued_codes();
+    $activations = read_activation_data();
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'message' => 'Не удалось прочитать хранилище кодов/активаций',
+    ]);
+    exit;
+}
 
 if ($action === 'add_code') {
     if ($code === '' || $show === '' || !isset($shows[$show])) {
@@ -140,6 +158,32 @@ if ($action === 'delete_code') {
     $ok2 = write_activation_data($activations);
 
     echo json_encode(['ok' => ($ok1 && $ok2), 'message' => 'Код удалён', 'code' => $code]);
+    exit;
+}
+
+
+if ($action === 'list_codes') {
+    $result = [];
+    $now = time();
+    foreach ($issued as $issuedCode => $issuedEntry) {
+        $activationEntry = $activations[$issuedCode] ?? null;
+        $status = 'not_activated';
+        if (is_array($activationEntry) && !empty($activationEntry['activated_at'])) {
+            $expiresAt = (int) $activationEntry['activated_at'] + get_access_seconds();
+            $status = $now >= $expiresAt ? 'expired' : 'active';
+        }
+
+        $result[] = [
+            'code' => $issuedCode,
+            'status' => $status,
+        ];
+    }
+
+    usort($result, static function (array $a, array $b): int {
+        return strcmp($a['code'], $b['code']);
+    });
+
+    echo json_encode(['ok' => true, 'items' => $result, 'count' => count($result)]);
     exit;
 }
 
