@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const LAST_CODE_KEY = 'podmostki:lastCode';
     const DEVICE_ID_KEY = 'podmostki:deviceId';
+    const DEVICE_FINGERPRINT_KEY = 'podmostki:deviceFingerprint';
     const PLAYER_GATE_KEY = 'podmostki:playerGate';
 
     const navEntries = performance.getEntriesByType('navigation');
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const deviceId = localStorage.getItem(DEVICE_ID_KEY) || '';
+    const deviceFingerprint = localStorage.getItem(DEVICE_FINGERPRINT_KEY) || '';
     if (!deviceId) {
         window.location.href = '/';
         return;
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setMessage('Проверка доступа...');
 
-    fetch(`/api/code-status.php?code=${encodeURIComponent(code)}&device_id=${encodeURIComponent(deviceId)}`)
+    fetch(`/api/code-status.php?code=${encodeURIComponent(code)}&device_id=${encodeURIComponent(deviceId)}&device_fingerprint=${encodeURIComponent(deviceFingerprint)}`)
         .then(function (res) { return res.json(); })
         .then(function (status) {
             if (status.status !== 'active' || !status.show) {
@@ -158,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
         audio.load();
 
         trackTitleEl.innerText = track.title || `Трек ${index + 1}`;
+        showCoverEl.src = track.cover || showCoverEl.src;
 
         progressEl.value = 0;
         currentTimeEl.innerText = '0:00';

@@ -1,23 +1,38 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Ключи local/session storage для клиентского состояния.
     const LAST_CODE_KEY = 'podmostki:lastCode';
     const DEVICE_ID_KEY = 'podmostki:deviceId';
+    const DEVICE_FINGERPRINT_KEY = 'podmostki:deviceFingerprint';
     const PLAYER_GATE_KEY = 'podmostki:playerGate';
 
+    // Элементы страницы входа.
     const inputEl = document.getElementById('ticketCode');
     const actionBtnEl = document.getElementById('entryActionBtn');
     const messageEl = document.getElementById('entryMessage');
 
+    // Идентификатор устройства (persist) и мягкий fingerprint (для инкогнито fallback).
     const deviceId = getOrCreateDeviceId();
+    const deviceFingerprint = getOrCreateDeviceFingerprint();
+
+    // Последний ответ API по текущему коду.
     let latestStatus = null;
 
-    const savedCode = localStorage.getItem(LAST_CODE_KEY);
-    if (savedCode) {
+    // 1) Автозаполнение из ссылки: /?code=G12345
+    // 2) Если ссылки нет — подставляем последний код пользователя.
+    const params = new URLSearchParams(window.location.search);
+    const codeFromLink = sanitizeTicketCode(params.get('code') || '');
+    const savedCode = localStorage.getItem(LAST_CODE_KEY) || '';
+
+    if (codeFromLink.length === 6) {
+        inputEl.value = codeFromLink;
+        localStorage.setItem(LAST_CODE_KEY, codeFromLink);
+    } else if (savedCode) {
         inputEl.value = savedCode;
     }
 
+    // Проверка кода после каждого изменения, как только введено 6 символов.
     inputEl.addEventListener('input', function () {
-        const clean = inputEl.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        inputEl.value = clean.slice(0, 6);
+        inputEl.value = sanitizeTicketCode(inputEl.value);
 
         localStorage.setItem(LAST_CODE_KEY, inputEl.value);
 
@@ -31,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Обработка кнопки: Активировать / Продолжить в зависимости от статуса.
     actionBtnEl.addEventListener('click', function () {
         if (!latestStatus) return;
 
@@ -44,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Если код уже есть (из ссылки или localStorage) — сразу проверяем.
     if (inputEl.value.length === 6) {
         checkStatus(inputEl.value);
     } else {
@@ -51,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
         actionBtnEl.textContent = 'Введите 6 символов';
     }
 
+    /**
+     * Стабильный device_id для обычного режима браузера.
+     */
     function getOrCreateDeviceId() {
         const existing = localStorage.getItem(DEVICE_ID_KEY);
         if (existing) return existing;
@@ -63,8 +83,47 @@ document.addEventListener('DOMContentLoaded', function () {
         return generated;
     }
 
+    /**
+     * Мягкий отпечаток браузера/устройства (без хранения персональных данных).
+     * Помогает распознать «то же устройство» при новом device_id в инкогнито.
+     */
+    function getOrCreateDeviceFingerprint() {
+        const existing = localStorage.getItem(DEVICE_FINGERPRINT_KEY);
+        if (existing) return existing;
+
+        const parts = [
+            // Без userAgent: чтобы один и тот же телефон в другом браузере
+            // чаще распознавался как то же устройство.
+            navigator.platform || '',
+            navigator.language || '',
+            String(navigator.maxTouchPoints || 0),
+            String(navigator.hardwareConcurrency || 0),
+            String(window.screen ? window.screen.width : ''),
+            String(window.screen ? window.screen.height : ''),
+            String(new Date().getTimezoneOffset())
+        ];
+
+        const raw = parts.join('|');
+        let hash = 0;
+        for (let i = 0; i < raw.length; i += 1) {
+            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+            hash |= 0;
+        }
+
+        const fp = `fp-${Math.abs(hash)}`;
+        localStorage.setItem(DEVICE_FINGERPRINT_KEY, fp);
+        return fp;
+    }
+
     function setMessage(text) {
         messageEl.textContent = text || '';
+    }
+
+    function sanitizeTicketCode(raw) {
+        return String(raw || '')
+            .toUpperCase()
+            .replace(/[^A-Z0-9!_\-]/g, '')
+            .slice(0, 6);
     }
 
     function setButtonByStatus(status) {
@@ -84,12 +143,19 @@ document.addEventListener('DOMContentLoaded', function () {
         actionBtnEl.textContent = 'Недоступно';
     }
 
+    // Запрос статуса кода.
     function checkStatus(code) {
         setMessage('Проверяем код...');
         actionBtnEl.disabled = true;
         actionBtnEl.textContent = 'Проверка...';
 
-        fetch(`/api/code-status.php?code=${encodeURIComponent(code)}&device_id=${encodeURIComponent(deviceId)}`)
+        const query = new URLSearchParams({
+            code: code,
+            device_id: deviceId,
+            device_fingerprint: deviceFingerprint
+        });
+
+        fetch(`/api/code-status.php?${query.toString()}`)
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 latestStatus = data;
@@ -113,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (data.status === 'not_activated') {
-                    setMessage('Код найден. Нажмите «Активировать».');
+                    setMessage(data.message || 'Код найден. Нажмите «Активировать».');
                     setButtonByStatus(data.status);
                     return;
                 }
@@ -135,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Активация кода на устройстве.
     function activateCode(code) {
         actionBtnEl.disabled = true;
         actionBtnEl.textContent = 'Активация...';
@@ -142,7 +209,11 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/api/activate-code.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code, device_id: deviceId })
+            body: JSON.stringify({
+                code: code,
+                device_id: deviceId,
+                device_fingerprint: deviceFingerprint
+            })
         })
             .then(function (res) { return res.json(); })
             .then(function (data) {
@@ -182,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
+    // Переход в плеер разрешается только через gate-флаг.
     function goToPlayer(showSlug, code) {
         sessionStorage.setItem(PLAYER_GATE_KEY, '1');
         window.location.href = `/player.php?show=${encodeURIComponent(showSlug)}&code=${encodeURIComponent(code)}`;
