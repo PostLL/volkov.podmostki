@@ -88,18 +88,18 @@ document.addEventListener('DOMContentLoaded', function () {
      * Помогает распознать «то же устройство» при новом device_id в инкогнито.
      */
     function getOrCreateDeviceFingerprint() {
-        const existing = localStorage.getItem(DEVICE_FINGERPRINT_KEY);
-        if (existing) return existing;
+        // Не используем userAgent/platform/hardwareConcurrency:
+        // они часто отличаются между браузерами на одном и том же телефоне.
+        // Берём максимально стабильные признаки, чтобы снизить ложные "другое устройство".
+        const width = window.screen ? window.screen.width : 0;
+        const height = window.screen ? window.screen.height : 0;
+        const minSide = Math.min(width, height);
+        const maxSide = Math.max(width, height);
 
         const parts = [
-            // Без userAgent: чтобы один и тот же телефон в другом браузере
-            // чаще распознавался как то же устройство.
-            navigator.platform || '',
+            String(minSide || ''),
+            String(maxSide || ''),
             navigator.language || '',
-            String(navigator.maxTouchPoints || 0),
-            String(navigator.hardwareConcurrency || 0),
-            String(window.screen ? window.screen.width : ''),
-            String(window.screen ? window.screen.height : ''),
             String(new Date().getTimezoneOffset())
         ];
 

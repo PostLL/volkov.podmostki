@@ -23,7 +23,7 @@ body {
     flex-direction: column;
     min-height: 72px;
     justify-content: center;
-
+    margin: 0 -50px;
 }
 
 .brand {
@@ -283,10 +283,16 @@ body {
 }
 
 .ticket-card {
-    border: 1px dashed #ff9a2f;
+    border: 1px solid #ff9a2f;
     border-radius: 14px;
-    background: linear-gradient(180deg, #121212, #0a0a0a);
+    background:
+        radial-gradient(circle at 0 50%, transparent 11px, #111 12px),
+        radial-gradient(circle at 100% 50%, transparent 11px, #111 12px),
+        linear-gradient(180deg, #171717, #090909);
     padding: 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(255, 154, 47, 0.2) inset;
 }
 
 .ticket-card--info {
@@ -298,6 +304,13 @@ body {
     margin: 0 0 8px;
     color: #ffc788;
     font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.ticket-cut {
+    border-top: 1px dashed rgba(255, 154, 47, 0.6);
+    margin: 0 -14px 12px;
 }
 
 .ticket-code {
@@ -314,17 +327,123 @@ body {
     gap: 8px;
 }
 
+.ticket-actions--compact {
+    grid-template-columns: 1fr;
+}
+
 .ticket-btn {
-    min-height: 48px;
-    font-size: 17px;
+    min-height: 40px;
+    font-size: 15px;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border-radius: 999px;
+    width: auto;
+    padding: 0 14px;
+}
+
+.ticket-btn--use {
+    background: linear-gradient(90deg, #ff7f00, #ff9f2f);
+    border-color: transparent;
+    color: #1d1204;
+    font-weight: 700;
+}
+
+.ticket-btn--share,
+.ticket-btn--ghost {
+    background: rgba(255, 127, 0, 0.08);
+    border: 1px solid rgba(255, 127, 0, 0.5);
+    color: #ffbd79;
 }
 
 .ticket-empty {
     margin: 0;
     color: #ffc788;
     line-height: 1.45;
+}
+
+.shop-card {
+    border-style: solid;
+}
+
+.shop-description {
+    margin: 0 0 10px;
+    color: #ffd8ab;
+    line-height: 1.35;
+}
+
+.shop-price {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.shop-meta {
+    margin: 0 0 10px;
+    color: #ffc788;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.compliance-card {
+    border: 1px solid #2c2c2c;
+    background: linear-gradient(180deg, #121212, #090909);
+}
+
+.compliance-card h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+}
+
+.compliance-list {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 8px;
+    color: #ffd8ab;
+}
+
+.compliance-list a {
+    color: #ffb570;
+}
+
+.shop-controls {
+    display: grid;
+    gap: 8px;
+}
+
+.shop-qty-stepper {
+    display: inline-grid;
+    grid-template-columns: 40px minmax(56px, 72px) 40px;
+    align-items: center;
+    gap: 6px;
+}
+
+.shop-qty-btn {
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid #ff7f00;
+    background: #101010;
+    color: #ffb570;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.shop-label {
+    color: #ffc788;
+    font-size: 14px;
+}
+
+.shop-qty {
+    min-height: 44px;
+    font-size: 18px;
+    max-width: 72px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.shop-buy-btn {
+    width: fit-content;
 }
