@@ -1,7 +1,8 @@
-const CACHE_NAME = 'podmostki-shell-v3';
+const CACHE_NAME = 'podmostki-shell-v5';
 const APP_SHELL = [
     '/',
     '/index.php',
+    '/shop.php',
     '/player.php',
     '/success.php',
     '/fail.php',
@@ -9,6 +10,7 @@ const APP_SHELL = [
     '/assets/styles.css',
     '/assets/player.js',
     '/assets/entry.js',
+    '/assets/shop.js',
     '/assets/payment-result.js',
     '/assets/icons/play.svg',
     '/assets/icons/pause.svg',

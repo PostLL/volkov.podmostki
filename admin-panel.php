@@ -18,6 +18,9 @@ $shows = require __DIR__ . '/api/shows.php';
         .grid button:disabled{opacity:.5;cursor:not-allowed}
         pre{white-space:pre-wrap;word-break:break-word;background:#050505;padding:10px;border-radius:8px;color:#ffc788;min-height:60px}
         .hint{color:#ffd8ab;font-size:14px;margin:0}
+        .codes-table{width:100%;border-collapse:collapse;margin-top:10px}
+        .codes-table th,.codes-table td{border:1px solid #2c2c2c;padding:8px;text-align:left}
+        .codes-table th{color:#ffb570}
     </style>
 </head>
 <body>
@@ -60,7 +63,7 @@ $shows = require __DIR__ . '/api/shows.php';
     <section class="card">
         <h3>Обслуживание</h3>
         <div class="grid">
-            <button onclick="runAction('run_cleanup',{})">Запустить очистку просроченных (14+ дней)</button>
+            <button onclick="runAction('run_cleanup',{})">Запустить очистку просроченных (сразу после истечения)</button>
         </div>
     </section>
 
@@ -81,6 +84,34 @@ $shows = require __DIR__ . '/api/shows.php';
     </section>
 
     <section class="card">
+        <h3>Режим кассы</h3>
+        <div class="grid">
+            <select id="cashMode">
+                <option value="test">Тестовый режим</option>
+                <option value="live">Боевой режим</option>
+            </select>
+            <button onclick="saveCashMode()">Сохранить режим</button>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Продажа спектаклей (вкл/выкл)</h3>
+        <div id="showToggles" class="grid"></div>
+        <div class="grid" style="margin-top:10px">
+            <button onclick="goToAddShow()">Добавить спектакль</button>
+        </div>
+    </section>
+
+
+    <section class="card">
+        <h3>Все коды (только просмотр)</h3>
+        <div class="grid">
+            <button onclick="loadAllCodes()">Показать все коды</button>
+        </div>
+        <div id="codesTableWrap"></div>
+    </section>
+
+    <section class="card">
         <h3>Ответ сервера</h3>
         <pre id="out">Пока пусто.</pre>
     </section>
@@ -91,6 +122,7 @@ function val(id){return document.getElementById(id).value.trim();}
 
 const showSelect = document.getElementById('showSelect');
 const generateBtn = document.getElementById('generateBtn');
+const cashModeEl = document.getElementById('cashMode');
 
 showSelect.addEventListener('change', function () {
     generateBtn.disabled = !showSelect.value;
@@ -111,14 +143,19 @@ async function runAction(action, params) {
     const out = document.getElementById('out');
     out.textContent = 'Загрузка...';
 
-    const query = new URLSearchParams({ action, key, ...params });
-    const url = '/api/admin-code.php?' + query.toString();
+    const body = new URLSearchParams({ action, key, ...params });
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
 
     try {
-        const res = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+        const res = await fetch('/api/admin-code.php', {
+            method: 'POST',
+            body,
+            signal: controller.signal,
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+        });
         const text = await res.text();
         out.textContent = text;
 
@@ -158,7 +195,7 @@ async function createRobokassaTestLink() {
     const out = document.getElementById('out');
     out.textContent = 'Загрузка...';
 
-    const query = new URLSearchParams({
+    const body = new URLSearchParams({
         key,
         show,
         amount: val('rkAmount') || '1.00',
@@ -168,11 +205,27 @@ async function createRobokassaTestLink() {
     });
 
     try {
-        const res = await fetch('/api/robokassa-create-payment.php?' + query.toString(), { cache: 'no-store' });
+        const res = await fetch('/api/robokassa-create-payment.php', {
+            method: 'POST',
+            body,
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+        });
         const text = await res.text();
-        out.textContent = text;
 
-        const data = JSON.parse(text);
+        let data = null;
+        try {
+            data = JSON.parse(text);
+        } catch (_) {
+            out.textContent = 'Сервер вернул не-JSON ответ\n' + (text || '(пустой ответ)');
+            return;
+        }
+
+        out.textContent = JSON.stringify(data, null, 2);
+        if (!res.ok || !data.ok) {
+            return;
+        }
+
         if (data.payment_url) {
             window.open(data.payment_url, '_blank', 'noopener');
         }
@@ -180,6 +233,127 @@ async function createRobokassaTestLink() {
         out.textContent = 'Ошибка запроса: ' + e;
     }
 }
+
+function goToAddShow() {
+    const key = val('adminKey');
+    if (!key) {
+        alert('Введите секретный ключ');
+        return;
+    }
+    window.location.href = '/admin-add-show.php?key=' + encodeURIComponent(key);
+}
+
+async function loadSettings() {
+    const key = val('adminKey');
+    if (!key) return;
+
+    const out = document.getElementById('out');
+    try {
+        const res = await fetch('/api/admin-settings.php', { method: 'POST', body: new URLSearchParams({ action: 'get', key }), cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' } });
+        const data = await res.json();
+        if (!data.ok) return;
+
+        cashModeEl.value = data.cash_mode || 'test';
+        renderShowToggles(data.shows || {});
+    } catch (e) {
+        out.textContent = 'Не удалось загрузить настройки: ' + e;
+    }
+}
+
+function renderShowToggles(shows) {
+    const root = document.getElementById('showToggles');
+    root.innerHTML = '';
+    Object.keys(shows).forEach(function (slug) {
+        const row = document.createElement('label');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.gap = '10px';
+
+        const text = document.createElement('span');
+        text.textContent = slug + ' — ' + (shows[slug].title || slug);
+
+        const sw = document.createElement('input');
+        sw.type = 'checkbox';
+        sw.checked = shows[slug].enabled !== false;
+        sw.addEventListener('change', function () {
+            toggleShow(slug, sw.checked);
+        });
+
+        row.appendChild(text);
+        row.appendChild(sw);
+        root.appendChild(row);
+    });
+}
+
+
+
+async function loadAllCodes() {
+    const key = val('adminKey');
+    if (!key) {
+        alert('Введите секретный ключ');
+        return;
+    }
+
+    const out = document.getElementById('out');
+    const wrap = document.getElementById('codesTableWrap');
+    wrap.innerHTML = '';
+    out.textContent = 'Загружаем список кодов...';
+
+    try {
+        const res = await fetch('/api/admin-code.php', { method: 'POST', body: new URLSearchParams({ action: 'list_codes', key }), cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' } });
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+
+        if (!data.ok) {
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'codes-table';
+        table.innerHTML = '<thead><tr><th>Код</th><th>Статус</th></tr></thead>';
+        const body = document.createElement('tbody');
+
+        (data.items || []).forEach(function (item) {
+            const tr = document.createElement('tr');
+            const tdCode = document.createElement('td');
+            tdCode.textContent = item.code || '';
+            const tdStatus = document.createElement('td');
+            tdStatus.textContent = item.status || '';
+            tr.appendChild(tdCode);
+            tr.appendChild(tdStatus);
+            body.appendChild(tr);
+        });
+
+        table.appendChild(body);
+        wrap.appendChild(table);
+    } catch (e) {
+        out.textContent = 'Ошибка загрузки кодов: ' + e;
+    }
+}
+
+async function saveCashMode() {
+    const key = val('adminKey');
+    if (!key) {
+        alert('Введите секретный ключ');
+        return;
+    }
+    const out = document.getElementById('out');
+    out.textContent = 'Сохраняем режим...';
+
+    const res = await fetch('/api/admin-settings.php', { method: 'POST', body: new URLSearchParams({ action: 'set_cash_mode', key, mode: cashModeEl.value }), cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' } });
+    out.textContent = await res.text();
+}
+
+async function toggleShow(slug, enabled) {
+    const key = val('adminKey');
+    if (!key) return;
+    const out = document.getElementById('out');
+    const res = await fetch('/api/admin-settings.php', { method: 'POST', body: new URLSearchParams({ action: 'toggle_show', key, show: slug, enabled: enabled ? '1' : '0' }), cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' } });
+    out.textContent = await res.text();
+}
+
+document.getElementById('adminKey').addEventListener('blur', loadSettings);
 </script>
 </body>
 </html>

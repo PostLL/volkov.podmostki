@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="/assets/icons/play.svg">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/manifest-logo.svg">
     <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
@@ -31,7 +31,7 @@
         <h2>Внимание!</h2>
         <p>Введите код полностью и дождитесь проверки статуса. Если код активен — нажмите «Продолжить», если не активирован — «Активировать».</p>
         <p>Доступ к спектаклю ограничен по времени. Не передавайте код третьим лицам.</p>
-        <p><strong>Техподдержка:</strong> support@podmostki.ru · +7 (900) 000-00-00</p>
+        <p><strong>Техподдержка:</strong> support@volga-tours.ru · +7 (900) 000-00-00</p>
     </section>
 </div>
 
