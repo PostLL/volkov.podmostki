@@ -12,7 +12,9 @@ if (is_array($json)) {
 
 $code = $_POST['code'] ?? ($payload['code'] ?? '');
 $deviceId = $_POST['device_id'] ?? ($payload['device_id'] ?? '');
+$deviceFingerprint = $_POST['device_fingerprint'] ?? ($payload['device_fingerprint'] ?? '');
 $deviceId = normalize_device_id($deviceId);
+$deviceFingerprint = normalize_device_fingerprint($deviceFingerprint);
 
 if ($code === '') {
     http_response_code(400);
@@ -26,15 +28,11 @@ if ($deviceId === '') {
     exit;
 }
 
-$status = get_code_status_payload($code, $shows, $deviceId);
+$status = get_code_status_payload($code, $shows, $deviceId, $deviceFingerprint);
+$accessSeconds = get_access_seconds();
 
 if (in_array($status['status'], ['invalid', 'expired', 'device_mismatch'], true)) {
     http_response_code(422);
-    echo json_encode($status);
-    exit;
-}
-
-if ($status['status'] === 'active') {
     echo json_encode($status);
     exit;
 }
@@ -48,11 +46,21 @@ $existingCreatedAt = isset($activations[$normalizedCode]['created_at'])
     ? (int) $activations[$normalizedCode]['created_at']
     : $now;
 
+$existingActivatedAt = isset($activations[$normalizedCode]['activated_at'])
+    ? (int) $activations[$normalizedCode]['activated_at']
+    : 0;
+
+// Если код уже активен и мы просто перепривязываем тот же девайс по fingerprint,
+// не продлеваем 10 часов, сохраняем исходное activated_at.
+$effectiveActivatedAt = $existingActivatedAt > 0 ? $existingActivatedAt : $now;
+
 $activations[$normalizedCode] = [
     'show' => $show,
     'device_id' => $deviceId,
-    'activated_at' => $now,
-    'created_at' => $existingCreatedAt
+    'device_fingerprint' => $deviceFingerprint,
+    'activated_at' => $effectiveActivatedAt,
+    'created_at' => $existingCreatedAt,
+    'updated_at' => $now
 ];
 
 if (!write_activation_data($activations)) {
@@ -83,7 +91,7 @@ echo json_encode([
     'message' => 'Код успешно активирован.',
     'show' => $show,
     'code' => $normalizedCode,
-    'activated_at' => $now,
-    'expires_at' => $now + 10 * 60 * 60,
-    'remaining_seconds' => 10 * 60 * 60
+    'activated_at' => $effectiveActivatedAt,
+    'expires_at' => $effectiveActivatedAt + $accessSeconds,
+    'remaining_seconds' => max(0, ($effectiveActivatedAt + $accessSeconds) - $now)
 ]);

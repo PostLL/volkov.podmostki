@@ -6,6 +6,7 @@ require __DIR__ . '/code-lib.php';
 
 $code = $_GET['code'] ?? '';
 $deviceId = $_GET['device_id'] ?? '';
+$deviceFingerprint = $_GET['device_fingerprint'] ?? '';
 
 if ($code === '') {
     http_response_code(400);
@@ -13,6 +14,6 @@ if ($code === '') {
     exit;
 }
 
-$result = get_code_status_payload($code, $shows, $deviceId);
+$result = get_code_status_payload($code, $shows, $deviceId, $deviceFingerprint);
 
 echo json_encode($result);

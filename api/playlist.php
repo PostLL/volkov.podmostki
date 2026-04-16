@@ -15,6 +15,8 @@ if (!isset($shows[$show])) {
 $showMeta = $shows[$show];
 $basePath = $_SERVER['DOCUMENT_ROOT'] . "/storage/audio/$show";
 $baseUrl = "/storage/audio/$show";
+$trackCoversPath = $_SERVER['DOCUMENT_ROOT'] . "/storage/covers/$show";
+$trackCoversUrl = "/storage/covers/$show";
 
 if (!is_dir($basePath)) {
     http_response_code(404);
@@ -37,14 +39,27 @@ $audioFiles = array_values($audioFiles);
 
 $tracks = [];
 $id = 1;
+$currentCover = $showMeta['cover'];
 
 foreach ($audioFiles as $file) {
     $title = pathinfo($file, PATHINFO_FILENAME);
+    $title = preg_replace('/^\s*\d+([\s._-]+)?/u', '', $title);
+    $title = trim((string) $title);
+
+    if ($title === '') {
+        $title = pathinfo($file, PATHINFO_FILENAME);
+    }
+
+    $trackCoverCandidatePath = $trackCoversPath . '/' . $id . '.jpg';
+    if (is_file($trackCoverCandidatePath)) {
+        $currentCover = $trackCoversUrl . '/' . $id . '.jpg';
+    }
 
     $tracks[] = [
         'id' => $id++,
         'title' => $title,
-        'file' => "$baseUrl/$file"
+        'file' => "$baseUrl/$file",
+        'cover' => $currentCover
     ];
 }
 
